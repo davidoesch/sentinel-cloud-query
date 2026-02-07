@@ -1,0 +1,36 @@
+name: Initial STAC Scrape
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  initial-scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r scripts/requirements.txt
+      
+      - name: Run initial scrape
+        run: |
+          python scripts/initial_scrape.py
+        env:
+          STAC_URL: https://sys-data.int.bgdi.ch/api/stac/v1
+          COLLECTION_ID: ch.swisstopo.swisseo_s2-sr_v200
+      
+      - name: Commit and push data
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/
+          git commit -m "Initial STAC scrape - $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          git push

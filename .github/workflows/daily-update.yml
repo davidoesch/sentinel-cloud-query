@@ -1,0 +1,38 @@
+name: Daily Cloud Mask Update
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Täglich um 3 Uhr UTC
+  workflow_dispatch:  # Auch manuell auslösbar
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r scripts/requirements.txt
+      
+      - name: Update with new scenes
+        run: |
+          python scripts/daily_update.py
+        env:
+          STAC_URL: https://sys-data.int.bgdi.ch/api/stac/v1
+          COLLECTION_ID: ch.swisstopo.swisseo_s2-sr_v200
+      
+      - name: Commit and push updates
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/
+          git commit -m "Daily update - $(date +'%Y-%m-%d')" || echo "No new scenes"
+          git push
