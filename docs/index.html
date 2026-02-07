@@ -376,10 +376,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
     
-    <!-- DuckDB WASM -->
-    <script src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-mvp.js"></script>
-    
-    <script>
+    <script type="module">
+        // Import DuckDB WASM
+        import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm';
+        
         // WICHTIG: DIESE ZEILEN ANPASSEN!
         const REPO_OWNER = 'davidoesch';  // ← Hier deinen GitHub Username eintragen
         const REPO_NAME = 'sentinel-cloud-query';
@@ -392,6 +392,12 @@
         let map, drawnItems, drawControl;
         let currentPolygon = null;
         let currentResults = [];
+
+        // Make functions globally available
+        window.queryCloudCover = queryCloudCover;
+        window.clearDrawing = clearDrawing;
+        window.showPreview = showPreview;
+        window.closeModal = closeModal;
 
         // Initialize Map
         function initMap() {
@@ -466,10 +472,8 @@
             `;
         }
         
-        // Convert LatLng to EPSG:2056 (simplified, for display only)
+        // Convert LatLng to EPSG:2056 (simplified)
         function latLngToCH1903(lat, lng) {
-            // Simplified conversion (for exact conversion use proj4js)
-            // This is approximate for Switzerland
             const y = 2600000 + (lng - 7.439583) * 111320;
             const x = 1200000 + (lat - 46.951083) * 111320;
             return [x, y];
@@ -506,7 +510,6 @@
             try {
                 statusText.textContent = 'Lade DuckDB...';
                 
-                // Use CDN bundle
                 const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
                 const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
                 
@@ -655,9 +658,13 @@
                                   scene.avg_cloud_pct <= 30 ? 'moderate' : 'poor';
                 const badgeClass = `badge-${cloudClass}`;
                 
-                // Construct TCI URL from cloudmask URL
+                // Extract base URL and construct TCI/thumbnail URLs
+                const baseUrl = scene.cog_url.substring(0, scene.cog_url.lastIndexOf('/'));
+                const sceneIdMatch = scene.cog_url.match(/(\d{4}-\d{2}-\d{2}t\d{6})/);
+                const sceneId = sceneIdMatch ? sceneIdMatch[1] : scene.scene_id;
+                
                 const tciUrl = scene.cog_url.replace('cloudmask_10m.tif', 'tci_10m.tif');
-                const thumbnailUrl = scene.cog_url.replace(/cloudmask_10m\.tif$/, '../thumbnail.png');
+                const thumbnailUrl = `${baseUrl}/thumbnail.png`;
                 
                 const formattedDate = new Date(scene.date).toLocaleDateString('de-CH', {
                     year: 'numeric',
@@ -672,7 +679,7 @@
                                  class="preview-img" 
                                  alt="Preview" 
                                  onclick="showPreview('${tciUrl}')"
-                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23eee%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo Preview%3C/text%3E%3C/svg%3E'">
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23eee%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2212%22%3ENo Preview%3C/text%3E%3C/svg%3E'">
                         </td>
                         <td><strong>${formattedDate}</strong></td>
                         <td style="font-family: monospace; font-size: 11px;">${scene.scene_id}</td>
