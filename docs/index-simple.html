@@ -1,80 +1,106 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sentinel-2 Cloud Cover Query</title>
-    
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-    
+
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
+
         .container {
             max-width: 1600px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
+
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
             text-align: center;
         }
-        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
-        .header p { opacity: 0.9; font-size: 1em; }
-        
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1em;
+        }
+
         .content {
             display: grid;
             grid-template-columns: 450px 1fr;
             gap: 0;
             min-height: 600px;
         }
-        
+
         .sidebar {
             border-right: 2px solid #e0e0e0;
             padding: 20px;
             overflow-y: auto;
             max-height: calc(100vh - 200px);
         }
-        
+
         .status-bar {
             background: #f8f9fa;
             border-radius: 8px;
             padding: 12px 15px;
             margin-bottom: 20px;
         }
+
         .status-text {
             font-weight: 600;
             font-size: 13px;
         }
-        .status-ready { color: #28a745; }
-        .status-error { color: #dc3545; }
-        
+
+        .status-ready {
+            color: #28a745;
+        }
+
+        .status-error {
+            color: #dc3545;
+        }
+
         .form-section {
             background: #f8f9fa;
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
         }
+
         .section-title {
             font-size: 1.1em;
             font-weight: 600;
             margin-bottom: 12px;
             color: #333;
         }
+
         .form-group {
             margin-bottom: 12px;
         }
+
         .form-group label {
             display: block;
             font-weight: 600;
@@ -82,6 +108,7 @@
             font-size: 13px;
             margin-bottom: 5px;
         }
+
         .form-group input {
             width: 100%;
             padding: 10px;
@@ -89,7 +116,7 @@
             border-radius: 6px;
             font-size: 14px;
         }
-        
+
         .map-info {
             background: #e3f2fd;
             padding: 12px;
@@ -98,8 +125,9 @@
             font-size: 13px;
             border-left: 4px solid #2196F3;
         }
-        
-        .query-button, .clear-button {
+
+        .query-button,
+        .clear-button {
             width: 100%;
             padding: 14px;
             border: none;
@@ -109,20 +137,23 @@
             cursor: pointer;
             transition: all 0.3s;
         }
+
         .query-button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             margin-top: 15px;
         }
+
         .query-button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
         }
+
         .query-button:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
-        
+
         .clear-button {
             background: #f44336;
             color: white;
@@ -130,26 +161,30 @@
             font-size: 14px;
             margin-bottom: 10px;
         }
-        
+
         .main-area {
             padding: 20px;
             overflow-y: auto;
             max-height: calc(100vh - 200px);
         }
-        
+
         #map {
             height: 400px;
             border-radius: 8px;
             margin-bottom: 20px;
             border: 2px solid #e0e0e0;
         }
-        
+
         .loading {
             display: none;
             text-align: center;
             padding: 40px;
         }
-        .loading.active { display: block; }
+
+        .loading.active {
+            display: block;
+        }
+
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #667eea;
@@ -159,11 +194,17 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        
+
         .summary {
             display: none;
             background: #e3f2fd;
@@ -172,8 +213,11 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
-        .summary.active { display: block; }
-        
+
+        .summary.active {
+            display: block;
+        }
+
         .results-table {
             width: 100%;
             border-collapse: collapse;
@@ -181,26 +225,31 @@
             background: white;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
+
         .results-table thead {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
+
         .results-table th {
             padding: 12px;
             text-align: left;
             font-weight: 600;
             font-size: 13px;
         }
+
         .results-table td {
             padding: 12px;
             border-bottom: 1px solid #e0e0e0;
             font-size: 13px;
         }
+
         .results-table tr:hover {
             background: #f8f9fa;
         }
+
         .preview-img {
             width: 80px;
             height: 80px;
@@ -209,9 +258,11 @@
             cursor: pointer;
             transition: transform 0.2s;
         }
+
         .preview-img:hover {
             transform: scale(1.1);
         }
+
         .cloud-badge {
             padding: 4px 10px;
             border-radius: 12px;
@@ -219,20 +270,37 @@
             font-size: 12px;
             display: inline-block;
         }
-        .badge-excellent { background: #d4edda; color: #155724; }
-        .badge-good { background: #d1ecf1; color: #0c5460; }
-        .badge-moderate { background: #fff3cd; color: #856404; }
-        .badge-poor { background: #f8d7da; color: #721c24; }
-        
+
+        .badge-excellent {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-good {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-moderate {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-poor {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .cog-link {
             color: #2196F3;
             text-decoration: none;
             font-weight: 600;
         }
+
         .cog-link:hover {
             text-decoration: underline;
         }
-        
+
         .modal {
             display: none;
             position: fixed;
@@ -241,17 +309,20 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             align-items: center;
             justify-content: center;
         }
+
         .modal.active {
             display: flex;
         }
+
         .modal-content {
             max-width: 90%;
             max-height: 90%;
         }
+
         .modal-close {
             position: absolute;
             top: 20px;
@@ -263,28 +334,29 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
             <h1>🛰️ Sentinel-2 Cloud Cover Query</h1>
             <p>Schweizer Wolkenbedeckung - Simple Version (ohne WASM)</p>
         </div>
-        
+
         <div class="content">
             <div class="sidebar">
                 <div class="status-bar">
                     <div class="status-text" id="statusText">⏳ Lade Daten...</div>
                 </div>
-                
+
                 <div class="map-info" id="mapInfo">
                     <strong>📍 Perimeter zeichnen:</strong>
                     Klicke auf das Polygon-Werkzeug in der Karte.
                 </div>
-                
+
                 <button class="clear-button" onclick="clearDrawing()" id="clearBtn" style="display: none;">
                     🗑️ Polygon löschen
                 </button>
-                
+
                 <div class="form-section">
                     <div class="section-title">📅 Zeitraum</div>
                     <div class="form-group">
@@ -296,7 +368,7 @@
                         <input type="date" id="end_date">
                     </div>
                 </div>
-                
+
                 <div class="form-section">
                     <div class="section-title">☁️ Filter</div>
                     <div class="form-group">
@@ -304,26 +376,26 @@
                         <input type="number" id="max_cloud" value="20" min="0" max="100">
                     </div>
                 </div>
-                
+
                 <button class="query-button" onclick="queryCloudCover()" id="queryBtn" disabled>
                     🔍 Abfragen
                 </button>
             </div>
-            
+
             <div class="main-area">
                 <div id="map"></div>
-                
+
                 <div class="loading" id="loading">
                     <div class="spinner"></div>
                     <p id="loadingText">Lade Daten...</p>
                 </div>
-                
+
                 <div class="summary" id="summary"></div>
                 <div id="results"></div>
             </div>
         </div>
     </div>
-    
+
     <div class="modal" id="previewModal" onclick="closeModal()">
         <span class="modal-close">&times;</span>
         <img class="modal-content" id="modalImg">
@@ -332,15 +404,16 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
     <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
-    
+
     <script>
         // WICHTIG: HIER DEINEN GITHUB USERNAME EINTRAGEN!
         const REPO_OWNER = 'davidoesch';  // ← ÄNDERE DIES!
         const REPO_NAME = 'sentinel-cloud-query';
         const BASE_URL = `https://${REPO_OWNER}.github.io/${REPO_NAME}`;
-        
+
         // Wir verwenden eine CSV Version statt Parquet
-        const SCENES_CSV_URL = `${BASE_URL}/data/scenes.csv`;
+        //const SCENES_CSV_URL = `${BASE_URL}/data/scenes.csv`;
+        const SCENES_CSV_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/sentinel-cloud-query/refs/heads/main/data/scenes.csv`;
 
         let allScenes = [];
         let map, drawnItems, currentPolygon = null;
@@ -348,18 +421,18 @@
         // Map initialisieren
         function initMap() {
             map = L.map('map').setView([46.8182, 8.2275], 8);
-            
+
             L.tileLayer('https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg', {
                 attribution: '&copy; swisstopo',
                 maxZoom: 18
             }).addTo(map);
-            
+
             drawnItems = new L.FeatureGroup();
             map.addLayer(drawnItems);
-            
+
             const drawControl = new L.Control.Draw({
                 draw: {
-                    polygon: { allowIntersection: false, shapeOptions: { color: '#667eea', weight: 3 }},
+                    polygon: { allowIntersection: false, shapeOptions: { color: '#667eea', weight: 3 } },
                     polyline: false,
                     rectangle: true,
                     circle: false,
@@ -369,7 +442,7 @@
                 edit: { featureGroup: drawnItems }
             });
             map.addControl(drawControl);
-            
+
             map.on(L.Draw.Event.CREATED, function (e) {
                 drawnItems.clearLayers();
                 drawnItems.addLayer(e.layer);
@@ -378,27 +451,27 @@
                 document.getElementById('clearBtn').style.display = 'block';
             });
         }
-        
+
         function clearDrawing() {
             drawnItems.clearLayers();
             currentPolygon = null;
             document.getElementById('clearBtn').style.display = 'none';
             document.getElementById('mapInfo').innerHTML = '<strong>📍 Perimeter zeichnen:</strong> Klicke auf das Polygon-Werkzeug.';
         }
-        
+
         function updateMapInfo() {
             if (!currentPolygon) return;
             const bounds = currentPolygon.getBounds();
             const area = L.GeometryUtil.geodesicArea(currentPolygon.getLatLngs()[0]) / 1000000;
             document.getElementById('mapInfo').innerHTML = `<strong>✓ Polygon gezeichnet</strong><br>Fläche: ${area.toFixed(1)} km²`;
         }
-        
+
         function latLngToCH1903(lat, lng) {
             const y = 2600000 + (lng - 7.439583) * 111320;
             const x = 1200000 + (lat - 46.951083) * 111320;
             return [x, y];
         }
-        
+
         function getPolygonBounds() {
             if (!currentPolygon) {
                 return { min_x: 2485000, min_y: 1075000, max_x: 2834000, max_y: 1296000 };
@@ -417,49 +490,49 @@
         // Lade Szenen-Daten (CSV)
         async function loadScenes() {
             const statusText = document.getElementById('statusText');
-            
+
             try {
                 statusText.textContent = '⏳ Lade Szenen-Daten...';
                 statusText.className = 'status-text';
-                
+
                 const response = await fetch(SCENES_CSV_URL);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: Konnte scenes.csv nicht laden. Hast du den GitHub USERNAME geändert?`);
                 }
-                
+
                 const csvText = await response.text();
-                
+
                 Papa.parse(csvText, {
                     header: true,
                     dynamicTyping: true,
-                    complete: function(results) {
+                    complete: function (results) {
                         allScenes = results.data.filter(s => s.scene_id); // Filter empty rows
-                        
+
                         if (allScenes.length === 0) {
                             throw new Error('Keine Szenen in CSV gefunden');
                         }
-                        
+
                         // Set date defaults
                         const dates = allScenes.map(s => s.date).sort();
                         const latestDate = dates[dates.length - 1];
                         const earliestDate = dates[0];
-                        
+
                         document.getElementById('end_date').value = latestDate;
                         const startDate = new Date(latestDate);
                         startDate.setMonth(startDate.getMonth() - 3);
                         document.getElementById('start_date').value = startDate.toISOString().split('T')[0];
-                        
+
                         statusText.textContent = `✅ ${allScenes.length} Szenen geladen (${earliestDate} - ${latestDate})`;
                         statusText.className = 'status-text status-ready';
                         document.getElementById('queryBtn').disabled = false;
-                        
+
                         console.log(`Loaded ${allScenes.length} scenes`);
                     },
-                    error: function(error) {
+                    error: function (error) {
                         throw error;
                     }
                 });
-                
+
             } catch (error) {
                 console.error('Load Error:', error);
                 statusText.textContent = `❌ Fehler: ${error.message}`;
@@ -472,38 +545,38 @@
             const loading = document.getElementById('loading');
             const summary = document.getElementById('summary');
             const results = document.getElementById('results');
-            
+
             queryBtn.disabled = true;
             loading.classList.add('active');
             summary.classList.remove('active');
             results.innerHTML = '';
-            
+
             const bbox = getPolygonBounds();
             const startDate = document.getElementById('start_date').value;
             const endDate = document.getElementById('end_date').value;
             const maxCloud = parseFloat(document.getElementById('max_cloud').value);
-            
+
             try {
                 // Filter in JavaScript (statt SQL)
                 const filtered = allScenes.filter(scene => {
                     // Date filter
                     if (scene.date < startDate || scene.date > endDate) return false;
-                    
+
                     // Cloud filter
                     if (scene.avg_cloud_pct > maxCloud) return false;
-                    
+
                     // Bbox filter (spatial intersection)
                     if (scene.bounds_min_x >= bbox.max_x || scene.bounds_max_x <= bbox.min_x) return false;
                     if (scene.bounds_min_y >= bbox.max_y || scene.bounds_max_y <= bbox.min_y) return false;
-                    
+
                     return true;
                 });
-                
+
                 // Sort by date DESC
                 filtered.sort((a, b) => b.date.localeCompare(a.date));
-                
+
                 displayResults(filtered.slice(0, 100), { start_date: startDate, end_date: endDate, max_cloud: maxCloud });
-                
+
             } catch (error) {
                 console.error('Query Error:', error);
                 results.innerHTML = `<p style="color: red; padding: 20px;">❌ ${error.message}</p>`;
@@ -516,15 +589,15 @@
         function displayResults(scenes, params) {
             const summary = document.getElementById('summary');
             const results = document.getElementById('results');
-            
+
             if (scenes.length === 0) {
                 results.innerHTML = '<p style="padding: 40px; text-align: center; color: #666;">Keine Szenen gefunden. Versuche einen größeren Zeitraum oder höheren Cloud-Schwellwert.</p>';
                 summary.classList.remove('active');
                 return;
             }
-            
+
             const avgCloud = Math.round(scenes.reduce((sum, s) => sum + s.avg_cloud_pct, 0) / scenes.length * 10) / 10;
-            
+
             summary.innerHTML = `
                 <h3>📊 Ergebnisse</h3>
                 <strong>${scenes.length} Szenen gefunden</strong> | 
@@ -532,7 +605,7 @@
                 Zeitraum: ${params.start_date} - ${params.end_date}
             `;
             summary.classList.add('active');
-            
+
             let tableHTML = `
                 <table class="results-table">
                     <thead>
@@ -546,19 +619,19 @@
                     </thead>
                     <tbody>
             `;
-            
+
             scenes.forEach(scene => {
-                const cloudClass = scene.avg_cloud_pct <= 5 ? 'excellent' : 
-                                  scene.avg_cloud_pct <= 15 ? 'good' : 
-                                  scene.avg_cloud_pct <= 30 ? 'moderate' : 'poor';
+                const cloudClass = scene.avg_cloud_pct <= 5 ? 'excellent' :
+                    scene.avg_cloud_pct <= 15 ? 'good' :
+                        scene.avg_cloud_pct <= 30 ? 'moderate' : 'poor';
                 const badgeClass = `badge-${cloudClass}`;
-                
+
                 const baseUrl = scene.cog_url.substring(0, scene.cog_url.lastIndexOf('/'));
                 const tciUrl = scene.cog_url.replace('cloudmask_10m.tif', 'tci_10m.tif');
                 const thumbnailUrl = `${baseUrl}/thumbnail.png`;
-                
+
                 const formattedDate = new Date(scene.date + 'T00:00:00').toLocaleDateString('de-CH');
-                
+
                 tableHTML += `
                     <tr>
                         <td>
@@ -578,16 +651,16 @@
                     </tr>
                 `;
             });
-            
+
             tableHTML += '</tbody></table>';
             results.innerHTML = tableHTML;
         }
-        
+
         function showPreview(url) {
             document.getElementById('modalImg').src = url;
             document.getElementById('previewModal').classList.add('active');
         }
-        
+
         function closeModal() {
             document.getElementById('previewModal').classList.remove('active');
         }
@@ -599,4 +672,5 @@
         });
     </script>
 </body>
+
 </html>
