@@ -12,7 +12,7 @@ Serverless Abfrage von Wolkenbedeckung für Schweizer Sentinel-2 Szenen.
 
 ## Live Demo
 
-👉 **https://YOUR-GITHUB-USERNAME.github.io/sentinel-cloud-query/**
+👉 **https://davidoesch.github.io/sentinel-cloud-query/**
 
 _(Nach dem Setup verfügbar)_
 
