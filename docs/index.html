@@ -41,7 +41,6 @@
             min-height: 600px;
         }
         
-        /* Sidebar */
         .sidebar {
             border-right: 2px solid #e0e0e0;
             padding: 20px;
@@ -96,7 +95,7 @@
             font-size: 13px;
             margin-bottom: 5px;
         }
-        .form-group input, .form-group select {
+        .form-group input {
             width: 100%;
             padding: 10px;
             border: 2px solid #e0e0e0;
@@ -154,11 +153,7 @@
             cursor: pointer;
             margin-bottom: 10px;
         }
-        .clear-button:hover {
-            background: #d32f2f;
-        }
         
-        /* Main Area */
         .main-area {
             padding: 20px;
             overflow-y: auto;
@@ -201,9 +196,7 @@
             margin-bottom: 20px;
         }
         .summary.active { display: block; }
-        .summary h3 { margin-bottom: 10px; }
         
-        /* Results Table */
         .results-table {
             width: 100%;
             border-collapse: collapse;
@@ -263,7 +256,6 @@
             text-decoration: underline;
         }
         
-        /* Modal for full preview */
         .modal {
             display: none;
             position: fixed;
@@ -292,6 +284,22 @@
             font-weight: bold;
             cursor: pointer;
         }
+        
+        .error-details {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        .error-details pre {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -302,7 +310,6 @@
         </div>
         
         <div class="content">
-            <!-- Sidebar -->
             <div class="sidebar">
                 <div class="status-bar">
                     <div class="status-dot" id="statusDot"></div>
@@ -314,7 +321,7 @@
                 
                 <div class="map-info" id="mapInfo">
                     <strong>📍 Perimeter zeichnen:</strong>
-                    Klicke auf das Polygon-Werkzeug in der Karte rechts, um einen Bereich zu zeichnen.
+                    Klicke auf das Polygon-Werkzeug in der Karte, um einen Bereich zu zeichnen.
                 </div>
                 
                 <button class="clear-button" onclick="clearDrawing()" id="clearBtn" style="display: none;">
@@ -350,7 +357,6 @@
                 </button>
             </div>
             
-            <!-- Main Area -->
             <div class="main-area">
                 <div id="map"></div>
                 
@@ -360,28 +366,24 @@
                 </div>
                 
                 <div class="summary" id="summary"></div>
-                
                 <div id="results"></div>
             </div>
         </div>
     </div>
     
-    <!-- Modal for preview -->
     <div class="modal" id="previewModal" onclick="closeModal()">
         <span class="modal-close">&times;</span>
         <img class="modal-content" id="modalImg">
     </div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
     
     <script type="module">
-        // Import DuckDB WASM
-        import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm';
+        import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1/+esm';
         
-        // WICHTIG: DIESE ZEILEN ANPASSEN!
-        const REPO_OWNER = 'davidoesch';  // ← Hier deinen GitHub Username eintragen
+        // WICHTIG: GitHub Username anpassen!
+        const REPO_OWNER = 'davidoesch';
         const REPO_NAME = 'sentinel-cloud-query';
         const BASE_URL = `https://${REPO_OWNER}.github.io/${REPO_NAME}`;
         
@@ -391,26 +393,20 @@
         let db, conn;
         let map, drawnItems, drawControl;
         let currentPolygon = null;
-        let currentResults = [];
 
-        // Make functions globally available
         window.queryCloudCover = queryCloudCover;
         window.clearDrawing = clearDrawing;
         window.showPreview = showPreview;
         window.closeModal = closeModal;
 
-        // Initialize Map
         function initMap() {
-            // Schweiz Zentrum
             map = L.map('map').setView([46.8182, 8.2275], 8);
             
-            // Swiss Topo Base Layer
             L.tileLayer('https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg', {
-                attribution: '&copy; <a href="https://www.swisstopo.admin.ch">swisstopo</a>',
+                attribution: '&copy; swisstopo',
                 maxZoom: 18
             }).addTo(map);
             
-            // Drawing controls
             drawnItems = new L.FeatureGroup();
             map.addLayer(drawnItems);
             
@@ -418,10 +414,7 @@
                 draw: {
                     polygon: {
                         allowIntersection: false,
-                        shapeOptions: {
-                            color: '#667eea',
-                            weight: 3
-                        }
+                        shapeOptions: { color: '#667eea', weight: 3 }
                     },
                     polyline: false,
                     rectangle: true,
@@ -435,17 +428,12 @@
             });
             map.addControl(drawControl);
             
-            // Draw events
             map.on(L.Draw.Event.CREATED, function (e) {
                 drawnItems.clearLayers();
                 drawnItems.addLayer(e.layer);
                 currentPolygon = e.layer;
                 updateMapInfo();
                 document.getElementById('clearBtn').style.display = 'block';
-            });
-            
-            map.on(L.Draw.Event.EDITED, function (e) {
-                updateMapInfo();
             });
         }
         
@@ -455,24 +443,20 @@
             document.getElementById('clearBtn').style.display = 'none';
             document.getElementById('mapInfo').innerHTML = `
                 <strong>📍 Perimeter zeichnen:</strong>
-                Klicke auf das Polygon-Werkzeug in der Karte rechts, um einen Bereich zu zeichnen.
+                Klicke auf das Polygon-Werkzeug in der Karte, um einen Bereich zu zeichnen.
             `;
         }
         
         function updateMapInfo() {
             if (!currentPolygon) return;
-            
             const bounds = currentPolygon.getBounds();
-            const area = L.GeometryUtil.geodesicArea(currentPolygon.getLatLngs()[0]) / 1000000; // km²
-            
+            const area = L.GeometryUtil.geodesicArea(currentPolygon.getLatLngs()[0]) / 1000000;
             document.getElementById('mapInfo').innerHTML = `
                 <strong>✓ Polygon gezeichnet</strong>
-                Fläche: ${area.toFixed(1)} km²<br>
-                Koordinaten gesetzt
+                Fläche: ${area.toFixed(1)} km²
             `;
         }
         
-        // Convert LatLng to EPSG:2056 (simplified)
         function latLngToCH1903(lat, lng) {
             const y = 2600000 + (lng - 7.439583) * 111320;
             const x = 1200000 + (lat - 46.951083) * 111320;
@@ -481,19 +465,11 @@
         
         function getPolygonBounds() {
             if (!currentPolygon) {
-                // Default: ganze Schweiz
-                return {
-                    min_x: 2485000,
-                    min_y: 1075000,
-                    max_x: 2834000,
-                    max_y: 1296000
-                };
+                return { min_x: 2485000, min_y: 1075000, max_x: 2834000, max_y: 1296000 };
             }
-            
             const bounds = currentPolygon.getBounds();
             const sw = latLngToCH1903(bounds.getSouth(), bounds.getWest());
             const ne = latLngToCH1903(bounds.getNorth(), bounds.getEast());
-            
             return {
                 min_x: Math.min(sw[1], ne[1]),
                 min_y: Math.min(sw[0], ne[0]),
@@ -502,34 +478,65 @@
             };
         }
 
-        // Initialize DuckDB
         async function initDuckDB() {
             const statusDot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
             
             try {
-                statusText.textContent = 'Lade DuckDB...';
+                statusText.textContent = 'Lade DuckDB WASM...';
+                console.log('Starting DuckDB initialization...');
                 
+                // Get bundles
                 const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
-                const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+                console.log('Bundles:', JSDELIVR_BUNDLES);
                 
+                // Select bundle
+                const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+                console.log('Selected bundle:', bundle);
+                
+                statusText.textContent = 'Starte Worker...';
+                
+                // Create worker with better error handling
                 const worker = await duckdb.createWorker(bundle.mainWorker);
+                console.log('Worker created');
+                
                 const logger = new duckdb.ConsoleLogger();
                 db = new duckdb.AsyncDuckDB(logger, worker);
                 
-                await db.instantiate(bundle.mainModule);
+                statusText.textContent = 'Initialisiere DuckDB...';
+                
+                // Instantiate with timeout
+                await Promise.race([
+                    db.instantiate(bundle.mainModule),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Timeout beim Laden von DuckDB')), 30000)
+                    )
+                ]);
+                
+                console.log('DuckDB instantiated');
+                
                 conn = await db.connect();
+                console.log('Connected to DuckDB');
+                
+                statusText.textContent = 'Teste Verbindung...';
+                
+                // Simple test query first
+                const testResult = await conn.query(`SELECT 1 as test`);
+                console.log('Test query successful');
                 
                 statusText.textContent = 'Lade Metadaten...';
                 
-                const testResult = await conn.query(`
+                // Now try to load parquet
+                const statsResult = await conn.query(`
                     SELECT 
                         COUNT(*) as count,
                         MIN(date) as earliest,
                         MAX(date) as latest
                     FROM read_parquet('${SCENES_URL}')
                 `);
-                const stats = testResult.toArray()[0];
+                
+                const stats = statsResult.toArray()[0];
+                console.log('Stats:', stats);
                 
                 statusDot.classList.add('ready');
                 statusText.textContent = '✅ Bereit';
@@ -546,7 +553,18 @@
                 
             } catch (error) {
                 console.error('Init Error:', error);
-                statusText.textContent = `❌ Fehler: ${error.message}`;
+                console.error('Error stack:', error.stack);
+                
+                statusText.textContent = '❌ Fehler beim Laden';
+                
+                const errorMsg = error.message || String(error);
+                document.getElementById('dbStats').innerHTML = `
+                    <div class="error-details">
+                        <strong>Fehler:</strong> ${errorMsg}<br>
+                        <small>Browser: ${navigator.userAgent.split(' ').pop()}</small><br>
+                        <small>Siehe Browser Console (F12) für Details</small>
+                    </div>
+                `;
             }
         }
 
@@ -602,9 +620,9 @@
                 `;
                 
                 const result = await conn.query(query);
-                currentResults = result.toArray();
+                const scenes = result.toArray();
                 
-                displayResults(currentResults, params);
+                displayResults(scenes, params);
                 
             } catch (error) {
                 console.error('Query Error:', error);
@@ -624,9 +642,7 @@
                 return;
             }
             
-            const avgCloud = scenes.length > 0 
-                ? Math.round(scenes.reduce((sum, s) => sum + s.avg_cloud_pct, 0) / scenes.length * 10) / 10
-                : 0;
+            const avgCloud = Math.round(scenes.reduce((sum, s) => sum + s.avg_cloud_pct, 0) / scenes.length * 10) / 10;
             
             summary.innerHTML = `
                 <h3>📊 Ergebnisse</h3>
@@ -636,7 +652,6 @@
             `;
             summary.classList.add('active');
             
-            // Build table
             let tableHTML = `
                 <table class="results-table">
                     <thead>
@@ -645,7 +660,7 @@
                             <th>Datum</th>
                             <th>Szene ID</th>
                             <th>Wolken (%)</th>
-                            <th>Wolken in BBox (%)</th>
+                            <th>Wolken BBox (%)</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -658,19 +673,11 @@
                                   scene.avg_cloud_pct <= 30 ? 'moderate' : 'poor';
                 const badgeClass = `badge-${cloudClass}`;
                 
-                // Extract base URL and construct TCI/thumbnail URLs
                 const baseUrl = scene.cog_url.substring(0, scene.cog_url.lastIndexOf('/'));
-                const sceneIdMatch = scene.cog_url.match(/(\d{4}-\d{2}-\d{2}t\d{6})/);
-                const sceneId = sceneIdMatch ? sceneIdMatch[1] : scene.scene_id;
-                
                 const tciUrl = scene.cog_url.replace('cloudmask_10m.tif', 'tci_10m.tif');
                 const thumbnailUrl = `${baseUrl}/thumbnail.png`;
                 
-                const formattedDate = new Date(scene.date).toLocaleDateString('de-CH', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                });
+                const formattedDate = new Date(scene.date).toLocaleDateString('de-CH');
                 
                 tableHTML += `
                     <tr>
@@ -679,25 +686,21 @@
                                  class="preview-img" 
                                  alt="Preview" 
                                  onclick="showPreview('${tciUrl}')"
-                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23eee%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2212%22%3ENo Preview%3C/text%3E%3C/svg%3E'">
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2210%22%3EKein Bild%3C/text%3E%3C/svg%3E'">
                         </td>
                         <td><strong>${formattedDate}</strong></td>
                         <td style="font-family: monospace; font-size: 11px;">${scene.scene_id}</td>
                         <td><span class="cloud-badge ${badgeClass}">${scene.avg_cloud_pct}%</span></td>
                         <td><span class="cloud-badge ${badgeClass}">${Math.round(scene.cloud_in_bbox * 10) / 10}%</span></td>
                         <td>
-                            <a href="${scene.cog_url}" target="_blank" class="cog-link">Cloud Mask</a> | 
+                            <a href="${scene.cog_url}" target="_blank" class="cog-link">Wolken</a> | 
                             <a href="${tciUrl}" target="_blank" class="cog-link">TCI</a>
                         </td>
                     </tr>
                 `;
             });
             
-            tableHTML += `
-                    </tbody>
-                </table>
-            `;
-            
+            tableHTML += '</tbody></table>';
             results.innerHTML = tableHTML;
         }
         
@@ -710,7 +713,6 @@
             document.getElementById('previewModal').classList.remove('active');
         }
 
-        // Initialize on load
         window.addEventListener('load', () => {
             initMap();
             initDuckDB();
