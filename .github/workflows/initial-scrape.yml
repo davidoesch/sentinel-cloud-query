@@ -23,6 +23,7 @@ jobs:
       - name: Run initial scrape
         run: |
           python scripts/initial_scrape.py
+          python scripts/parquet_to_csv.py
         env:
           STAC_URL: https://sys-data.int.bgdi.ch/api/stac/v1
           COLLECTION_ID: ch.swisstopo.swisseo_s2-sr_v200

@@ -49,7 +49,7 @@ def process_cloudmask_cog(cog_url: str, scene_id: str, acquisition_date: str) ->
 
                     tile_data = data[row:row+window_height, col:col+window_width]
 
-                    # Wolkenpixel zählen (Werte 21 und 2 sind Wolken)
+                    # Wolkenpixel zählen (Werte 1 und 2 sind Wolken)
                     total_pixels = tile_data.size
                     cloud_pixels = np.isin(tile_data, [1, 2]).sum()
                     valid_pixels = (tile_data > 0).sum()  # Keine NoData
